@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Exam Command Center Pro</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --panel: #111827;
+      --card: #1f2937;
+      --border: #374151;
+      --text: #f9fafb;
+      --muted: #9ca3af;
+      --accent: #38bdf8;
+      --accent2: #818cf8;
+      --success: #10b981;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    body { background: var(--bg); color: var(--text); display: flex; min-height: 100vh; overflow-x: hidden; }
+
+    /* Sidebar */
+    aside {
+      width: 270px; background: var(--panel); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; position: fixed; height: 100vh; z-index: 50;
+    }
+    .brand { padding: 18px 20px; border-bottom: 1px solid var(--border); }
+    .brand h1 { font-size: 1.15rem; color: var(--accent); font-weight: 800; letter-spacing: 0.5px; }
+    .brand p { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+
+    .timer-box {
+      margin: 14px; padding: 12px; background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; text-align: center;
+    }
+    .timer-display { font-size: 1.6rem; font-weight: 800; font-family: monospace; color: var(--warn); }
+    .timer-btns { display: flex; gap: 6px; justify-content: center; margin-top: 8px; }
+    .btn-sm {
+      background: var(--border); color: var(--text); border: none; padding: 5px 10px;
+      border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: 600;
+    }
+    .btn-sm:hover { background: var(--accent); color: #000; }
+
+    .nav-list { list-style: none; padding: 10px; flex: 1; overflow-y: auto; }
+    .nav-item {
+      padding: 11px 14px; border-radius: 8px; cursor: pointer; color: var(--muted);
+      font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; display: flex; align-items: center; gap: 10px;
+    }
+    .nav-item:hover { background: rgba(56, 189, 248, 0.1); color: var(--text); }
+    .nav-item.active { background: var(--accent); color: #090d16; font-weight: 700; }
+
+    .sidebar-footer { padding: 14px; border-top: 1px solid var(--border); }
+    .prog-bar-bg { background: var(--card); height: 8px; border-radius: 4px; overflow: hidden; margin-top: 6px; }
+    .prog-bar-fill { background: var(--success); height: 100%; width: 0%; transition: width 0.3s; }
+
+    /* Main Content Area */
+    .main-wrap { margin-left: 270px; flex: 1; display: flex; flex-direction: column; width: calc(100% - 270px); }
+    .topbar {
+      position: sticky; top: 0; z-index: 40; background: rgba(17, 24, 39, 0.95);
+      backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+      padding: 12px 24px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;
+    }
+    .search-box {
+      background: var(--card); border: 1px solid var(--border); color: var(--text);
+      padding: 9px 14px; border-radius: 8px; width: 300px; outline: none; font-size: 0.9rem;
+    }
+    .search-box:focus { border-color: var(--accent); }
+    .top-actions { display: flex; gap: 10px; align-items: center; }
+    .lang-toggle {
+      background: var(--card); border: 1px solid var(--accent); color: var(--accent);
+      padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 0.85rem;
+    }
+    .lang-toggle.english { background: var(--accent2); color: #fff; border-color: var(--accent2); }
+    .print-btn {
+      background: var(--success); color: #052e16; border: none; padding: 8px 14px;
+      border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 0.85rem;
+    }
+
+    .content-section { padding: 24px; max-width: 1100px; margin: 0 auto; width: 100%; display: none; }
+    .content-section.active { display: block; }
+
+    /* Cards & Tables */
+    .card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 20px; margin-bottom: 20px;
+    }
+    .card.mastered { border-color: var(--success); }
+    .card-head { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 14px; }
+    .card-title { font-size: 1.15rem; font-weight: 700; color: var(--accent); }
+    .tag { font-size: 0.72rem; background: var(--panel); color: var(--warn); padding: 3px 8px; border-radius: 4px; border: 1px solid var(--warn); margin-left: 8px; }
+    
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.9rem; }
+    th, td { border: 1px solid var(--border); padding: 10px; text-align: left; vertical-align: top; }
+    th { background: var(--panel); color: var(--accent); font-weight: 700; }
+    tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+
+    ul, ol { padding-left: 20px; margin: 8px 0; }
+    li { margin-bottom: 6px; line-height: 1.5; }
+    .hl { color: #fde047; font-weight: 600; }
+    .code-box {
+      background: var(--panel); border-left: 4px solid var(--accent); padding: 12px;
+      font-family: monospace; font-size: 0.9rem; color: #7dd3fc; margin: 10px 0; overflow-x: auto;
+    }
+
+    /* Diagram Flow Boxes */
+    .diagram-box {
+      background: var(--panel); border: 1px dashed var(--accent); border-radius: 8px;
+      padding: 16px; margin: 12px 0; font-family: monospace; white-space: pre; overflow-x: auto;
+      line-height: 1.35; color: #a5f3fc; font-size: 0.85rem;
+    }
+
+    /* Interactive Solvers */
+    .solver-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .input-group { margin-bottom: 10px; }
+    .input-group label { display: block; font-size: 0.82rem; color: var(--muted); margin-bottom: 4px; }
+    .input-group input {
+      width: 100%; padding: 8px 10px; background: var(--panel); border: 1px solid var(--border);
+      color: var(--text); border-radius: 6px;
+    }
+    .result-box { background: var(--panel); padding: 14px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.9rem; }
+
+    /* Exam Tester */
+    .qa-item { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+    .qa-q { font-weight: 700; color: var(--accent); margin-bottom: 8px; display: flex; justify-content: space-between; }
+    .qa-textarea {
+      width: 100%; height: 65px; background: var(--panel); border: 1px solid var(--border);
+      color: var(--text); border-radius: 6px; padding: 8px; font-size: 0.88rem; margin-bottom: 8px; resize: vertical;
+    }
+    .qa-ans { display: none; margin-top: 10px; padding: 12px; background: var(--panel); border-left: 3px solid var(--success); border-radius: 4px; font-size: 0.9rem; }
+    .kw-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; margin: 2px; background: #374151; }
+    .kw-badge.hit { background: #065f46; color: #a7f3d0; border: 1px solid #10b981; }
+
+    /* Language visibility */
+    body.mode-en .lang-hi { display: none !important; }
+    body.mode-hi .lang-en { display: none !important; }
+
+    @media (max-width: 850px) {
+      aside { width: 100%; height: auto; position: relative; border-right: none; border-bottom: 1px solid var(--border); }
+      body { flex-direction: column; }
+      .main-wrap { margin-left: 0; width: 100%; }
+      .solver-grid { grid-template-columns: 1fr; }
+    }
+    @media print {
+      aside, .topbar, .btn-sm, .qa-textarea { display: none !important; }
+      .main-wrap { margin: 0; width: 100%; }
+      .content-section { display: block !important; padding: 10px; }
+      body { background: #fff; color: #000; }
+      .card, .qa-item { background: #fff; border: 1px solid #ccc; color: #000; page-break-inside: avoid; }
+      .card-title, th, .qa-q { color: #000 !important; }
+      .qa-ans { display: block !important; background: #f8fafc; color: #000; }
+      .diagram-box, .code-box { background: #f1f5f9; color: #000; border-color: #000; }
+    }
+  </style>
+</head>
+<body class="mode-hi">
+
+  <!-- SIDEBAR -->
+  <aside>
+    <div class="brand">
+      <h1>⚡ AI EXAM PRO</h1>
+      <p>48-Hour Triage & Simulator</p>
+    </div>
+
+    <div class="timer-box">
+      <div style="font-size:0.75rem; color:var(--muted); margin-bottom:2px;">POMODORO SPRINT</div>
+      <div class="timer-display" id="timerDisplay">25:00</div>
+      <div class="timer-btns">
+        <button class="btn-sm" onclick="startTimer()">Start</button>
+        <button class="btn-sm" onclick="pauseTimer()">Pause</button>
+        <button class="btn-sm" onclick="resetTimer()">Reset</button>
+      </div>
+    </div>
+
+    <ul class="nav-list">
+      <li class="nav-item active" onclick="showTab('tab-notes', this)">📚 1. Smart Study Notes</li>
+      <li class="nav-item" onclick="showTab('tab-diagrams', this)">📐 2. Exam Diagrams (Draw)</li>
+      <li class="nav-item" onclick="showTab('tab-solvers', this)">🧮 3. Numerical Solvers</li>
+      <li class="nav-item" onclick="showTab('tab-practice', this)">✍️ 4. Answer Checker (Q&A)</li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
+        <span>Mastery Progress</span>
+        <span id="progPct">0%</span>
+      </div>
+      <div class="prog-bar-bg"><div class="prog-bar-fill" id="progFill"></div></div>
+    </div>
+  </aside>
+
+  <!-- MAIN AREA -->
+  <div class="main-wrap">
+    <div class="topbar">
+      <input type="search" class="search-box" id="globalSearch" placeholder="🔍 Search any concept, formula, or question..." oninput="runSearch()">
+      <div class="top-actions">
+        <button class="lang-toggle" id="langBtn" onclick="toggleLang()">🌐 Mode: Hinglish (Easy)</button>
+        <button class="print-btn" onclick="window.print()">📄 Export Full PDF</button>
+      </div>
+    </div>
+
+    <!-- SECTION 1: SMART NOTES (HINGLISH + PURE ENGLISH) -->
+    <section id="tab-notes" class="content-section active">
+      <h2 style="margin-bottom: 16px; color: var(--accent);">📚 Module-Wise High-Yield Notes (Toggle Hinglish / Exam English above)</h2>
+
+      <!-- CARD 1 -->
+      <div class="card searchable">
+        <div class="card-head">
+          <div><span class="card-title">1. Knowledge-Based (KB) Agent & Rule Representations</span><span class="tag">Ch 2 • Guaranteed</span></div>
+          <label style="font-size:0.85rem; cursor:pointer;"><input type="checkbox" class="master-check" onchange="saveProgress()"> Mastered</label>
+        </div>
+        <div class="lang-hi">
+          <ul>
+            <li><span class="hl">KB Agent Kya Hai?</span> Partially observable environment mein kaam aata hai. Ismein 2 cheezein hoti hain: <strong>Knowledge Base (KB)</strong> (domain-specific facts) aur <strong>Inference Engine</strong> (domain-independent algorithms).</li>
+            <li><span class="hl">TELL & ASK Operations:</span> <code>TELL(KB, percept)</code> naye facts ko KB mein jodata hai. <code>ASK(KB, query)</code> inference engine ki madad se agla action decide karta hai.</li>
+            <li><span class="hl">3 Levels of KB Agent:</span>
+              <ol>
+                <li><strong>Knowledge Level:</strong> Sabse abstract level—agent kya jaanta hai aur uske goals kya hain.</li>
+                <li><strong>Logical Level:</strong> Facts ko formal logic sentences (PL/FOL) mein badalna (e.g., <code>Links(GoldenGate, SF, Marin)</code>).</li>
+                <li><strong>Implementation Level:</strong> Physical data structures aur algorithms jinpar logic run hota hai.</li>
+              </ol>
+            </li>
+            <li><span class="hl">Knowledge Representation Methods:</span> (1) <em>Logical</em> (True/False), (2) <em>Production Rules</em> (<code>IF condition THEN action</code> - modular), (3) <em>Semantic Networks</em> (Graph nodes & labeled edges like <code>Tom --is-a--> Cat</code>), (4) <em>Frame Representation</em> (Marvin Minsky; Record structure with <strong>Slots</strong> & <strong>Facets</strong>), (5) <em>Ontology</em> (Shared domain vocabulary of concepts & relations).</li>
+          </ul>
+        </div>
+        <div class="lang-en">
+          <ul>
+            <li><span class="hl">Knowledge-Based Agent:</span> Designed for partially observable environments. Comprises a <strong>Knowledge Base (KB)</strong> (domain-specific sentences) and an <strong>Inference Engine</strong> (domain-independent algorithms).</li>
+            <li><span class="hl">Declarative Mechanism:</span> <code>TELL(KB, percept)</code> adds perceived facts to the KB; <code>ASK(KB, query)</code> queries the KB to infer the optimal action.</li>
+            <li><span class="hl">3 Architecture Levels:</span> (1) <strong>Knowledge Level</strong> (specifies what the agent knows and its goals), (2) <strong>Logical Level</strong> (encodes knowledge into formal sentences like PL/FOL), (3) <strong>Implementation Level</strong> (physical data structures and manipulation algorithms).</li>
+            <li><span class="hl">Rule Representations:</span> <em>Production Rules</em> (modular IF-THEN statements), <em>Semantic Networks</em> (nodes as concepts, arcs as relations), <em>Frames</em> (record-like structures with slots and facets), and <em>Ontology</em> (formal specification of shared conceptualizations).</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- CARD 2 -->
+      <div class="card searchable">
+        <div class="card-head">
+          <div><span class="card-title">2. Propositional Logic (PL) vs. First-Order Logic (FOL) & Forward vs. Backward Chaining</span><span class="tag">Ch 2 • 10 Marks</span></div>
+          <label style="font-size:0.85rem; cursor:pointer;"><input type="checkbox" class="master-check" onchange="saveProgress()"> Mastered</label>
+        </div>
+        <table>
+          <tr><th>Parameter</th><th>Propositional Logic (PL)</th><th>First-Order Predicate Logic (FOL)</th></tr>
+          <tr><td><strong>Expressiveness</strong></td><td>Weak knowledge representation language.</td><td>Strong, highly expressive representation language.</td></tr>
+          <tr><td><strong>Basic Unit</strong></td><td>Whole sentence is a single symbol (<code>A, B</code>).</td><td>Uses Predicates, Constants, Variables (<code>x, y</code>), Functions.</td></tr>
+          <tr><td><strong>World Assumption</strong></td><td>Assumes the world contains only <strong>facts</strong>.</td><td>Assumes world contains <strong>objects, relations, & functions</strong>.</td></tr>
+          <tr><td><strong>Properties & Relations</strong></td><td>Cannot directly represent individual entity properties.</td><td>Directly represents properties: e.g., <code>Short(Meera)</code>.</td></tr>
+          <tr><td><strong>Generalization</strong></td><td>Cannot express patterns or generalizations.</td><td>Uses Quantifiers: <strong>Universal (&forall;x)</strong> and <strong>Existential (&exist;x)</strong>.</td></tr>
+          <tr><td><strong>Context & Nature</strong></td><td>Context-independent; Declarative nature.</td><td>Context-dependent; Derivative nature.</td></tr>
+        </table>
+        <table>
+          <tr><th>Attribute</th><th>Forward Chaining</th><th>Backward Chaining</th></tr>
+          <tr><td><strong>Approach</strong></td><td><strong>Data-Driven</strong> (Opportunistic).</td><td><strong>Goal-Driven / Decision-Driven</strong> (Conservative).</td></tr>
+          <tr><td><strong>Direction</strong></td><td>Starts from initial facts (<code>IF</code>) &rarr; reaches conclusion (<code>THEN</code>). Bottom-up reasoning.</td><td>Starts from goal conclusion (<code>THEN</code>) &rarr; finds supporting facts (<code>IF</code>). Top-down reasoning.</td></tr>
+          <tr><td><strong>Search & Efficiency</strong></td><td>Uses <strong>Breadth-First Search (BFS)</strong>; somewhat wasteful as it infers irrelevant facts.</td><td>Uses <strong>Depth-First Search (DFS)</strong>; efficient as it only checks rules relevant to the goal.</td></tr>
+          <tr><td><strong>Applications</strong></td><td>Planning, monitoring, control, design expert systems.</td><td>Medical diagnosis, prescription, and debugging expert systems.</td></tr>
+        </table>
+      </div>
+
+      <!-- CARD 3 -->
+      <div class="card searchable">
+        <div class="card-head">
+          <div><span class="card-title">3. Planning: Progression vs. Regression, POP, STRIPS vs. ADL & Block World</span><span class="tag">Ch 2 • High Yield</span></div>
+          <label style="font-size:0.85rem; cursor:pointer;"><input type="checkbox" class="master-check" onchange="saveProgress()"> Mastered</label>
+        </div>
+        <div class="lang-hi">
+          <ul>
+            <li><span class="hl">Progression (Forward) vs. Regression (Backward):</span> Progression initial state se goal tak jata hai (high branching factor). Regression goal state se piche predecessors dhoondhta hai (low branching factor, sirf relevant actions dekhta hai).</li>
+            <li><span class="hl">Partial Order Planning (POP):</span> <strong>Least Commitment Strategy</strong> use karta hai—jab tak zaroori na ho actions ka order fix nahi karta. Iske 4 components hain: (1) Set of Actions, (2) Ordering Constraints (<code>A &prec; B</code>), (3) Causal Links (<code>A --E--> B</code>), (4) Open Preconditions.</li>
+            <li><span class="hl">STRIPS vs. ADL:</span> STRIPS mein sirf positive literals hote hain aur <strong>Closed-World Assumption</strong> hota hai (jo mention nahi hai woh False hai). ADL mein positive + negative literals (<code>&not;P</code>), quantified variables, disjunctions (<code>&or;</code>), aur <strong>Open-World Assumption</strong> (unmentioned = Unknown) hota hai.</li>
+            <li><span class="hl">Handling Real-World Uncertainty (4 Methods):</span> (1) <em>Sensorless/Conformant Planning</em> (no percepts), (2) <em>Conditional/Contingency Planning</em> (if-else check points for bounded indeterminacy), (3) <em>Execution Monitoring & Replanning</em>, (4) <em>Continuous Planning</em>.</li>
+          </ul>
+        </div>
+        <div class="lang-en">
+          <ul>
+            <li><span class="hl">Progression vs. Regression Planners:</span> Progression searches forward from the initial state (suffers from high branching factor due to irrelevant actions). Regression searches backward from the goal state by regressing over relevant actions (lower branching factor).</li>
+            <li><span class="hl">Partial Order Planning (POP):</span> Follows the <strong>Least Commitment Strategy</strong> by delaying ordering decisions. A consistent POP plan has no cycles in ordering constraints, no causal link conflicts, and no open preconditions.</li>
+            <li><span class="hl">STRIPS vs. ADL:</span> STRIPS restricts states to positive ground literals under the <strong>Closed-World Assumption</strong>. ADL supports negative literals, quantified variables, conditional effects, equality predicates, and the <strong>Open-World Assumption</strong>.</li>
+            <li><span class="hl">Block World Operators:</span> <code>pickup(X)</code>, <code>putdown(X)</code>, <code>stack(X,Y)</code>, and <code>unstack(X,Y)</code> defined by Preconditions, Delete List, and Add List.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- CARD 4 -->
+      <div class="card searchable">
+        <div class="card-head">
+          <div><span class="card-title">4. Uncertainty, Fuzzy Logic & Bayesian Belief Networks (BBN)</span><span class="tag">Ch 2 • Core</span></div>
+          <label style="font-size:0.85rem; cursor:pointer;"><input type="checkbox" class="master-check" onchange="saveProgress()"> Mastered</label>
+        </div>
+        <div class="lang-hi">
+          <ul>
+            <li><span class="hl">Medical Diagnosis mein Logic kyun fail hota hai?</span> (1) <strong>Laziness</strong> (saare exceptions likhna mushkil hai), (2) <strong>Theoretical Ignorance</strong> (medical science ko 100% nahi pata), (3) <strong>Practical Ignorance</strong> (saare tests run karna impractical hai).</li>
+            <li><span class="hl">Fuzzy Logic & Fuzzification:</span> Lotfi Zadeh ne diya. Statement ko 0 ya 1 dene ke bajay 0 se 1 ke beech <strong>Degree of Membership &mu;(x)</strong> deta hai (e.g., "Sameer is tall"). Crisp set ko linguistic fuzzy set (Cold, Warm) mein badalna <strong>Fuzzification</strong> kehlata hai.</li>
+            <li><span class="hl">Bayesian Belief Network (BBN):</span> Ek <strong>Directed Acyclic Graph (DAG)</strong> jismein Nodes = Random Variables, Arcs = Causal relationships (<code>Parent -> Child</code>), aur har node ka ek <strong>Conditional Probability Table (CPT)</strong> hota hai.</li>
+            <li><span class="hl">4 Types of Reasoning in BBN:</span> (1) <em>Diagnostic</em> (Symptom/Effect se Cause: <code>JohnCalls &rarr; Burglary</code>), (2) <em>Predictive</em> (Cause se Effect: <code>Burglary &rarr; JohnCalls</code>), (3) <em>Intercausal / Explaining Away</em> (Alarm bajne par agar Earthquake confirm ho jaye toh Burglary ki probability ghat jati hai), (4) <em>Combined</em>.</li>
+          </ul>
+        </div>
+        <div class="lang-en">
+          <ul>
+            <li><span class="hl">Failure of Logic in Uncertain Domains:</span> Due to <strong>Laziness</strong>, <strong>Theoretical Ignorance</strong>, and <strong>Practical Ignorance</strong>.</li>
+            <li><span class="hl">Fuzzy Logic & Fuzzification:</span> Represents vague knowledge using a membership function <code>&mu;(x) &isin; [0, 1]</code> and linguistic hedges (<em>very, fairly</em>). <strong>Fuzzification</strong> converts crisp numerical inputs into fuzzy linguistic sets.</li>
+            <li><span class="hl">Bayesian Belief Network (BBN):</span> A Directed Acyclic Graph (DAG) where nodes represent random variables, directed links represent direct causal dependencies, and each node has a Conditional Probability Table (CPT) satisfying the Markov property.</li>
+            <li><span class="hl">4 Reasoning Types:</span> <em>Diagnostic</em> (bottom-up from effects to causes), <em>Predictive</em> (top-down from causes to effects), <em>Intercausal / Explaining Away</em> (between mutual causes of a common V-structure effect), and <em>Combined</em>.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- CARD 5 -->
+      <div class="card searchable">
+        <div class="card-head">
+          <div><span class="card-title">5. Machine Learning Models: Parametric, Bias-Variance, GD, SVM & ANN</span><span class="tag">Ch 3 • Core</span></div>
+          <label style="font-size:0.85rem; cursor:pointer;"><input type="checkbox" class="master-check" onchange="saveProgress()"> Mastered</label>
+        </div>
+        <table>
+          <tr><th>Feature</th><th>Parametric Models</th><th>Non-Parametric Models</th></tr>
+          <tr><td><strong>Parameter Count</strong></td><td>Fixed number of parameters independent of dataset size.</td><td>Number of parameters grows with training data (Instance/Memory-based).</td></tr>
+          <tr><td><strong>Speed & Memory</strong></td><td>Fast training; low memory (training data discarded after learning).</td><td>Slow prediction; high memory (stores all training instances).</td></tr>
+          <tr><td><strong>Examples</strong></td><td>Linear Regression, Logistic Regression, Naive Bayes, Perceptron.</td><td>K-Nearest Neighbors (K-NN), Decision Trees, SVM, K-d Trees.</td></tr>
+        </table>
+        <div class="code-box">Total Error = Bias² + Variance + Irreducible Noise</div>
+        <ul>
+          <li><span class="hl">Underfitting (High Bias):</span> Model too simple; high training error & high test error. <em>Fix:</em> Add features, increase model complexity, reduce regularization.</li>
+          <li><span class="hl">Overfitting (High Variance):</span> Captures noise; low training error & high test error. <em>Fix:</em> L1/L2 Regularization, Dropout, Early Stopping, Tree Pruning, Cross-Validation, Data Augmentation.</li>
+          <li><span class="hl">Gradient Descent (GD):</span> Minimizes cost function using learning rate <code>&alpha;</code>. <strong>Batch GD</strong> (updates once per epoch on full data), <strong>Stochastic GD</strong> (updates per single example; escapes local minima), <strong>Mini-Batch GD</strong> (updates on small batches).</li>
+          <li><span class="hl">SVM (3 Properties):</span> (1) Finds <strong>Maximum Margin Separator</strong>, (2) Maps non-linear data into higher dimensions to make it linearly separable, (3) Combines parametric/non-parametric strengths to avoid overfitting.</li>
+          <li><span class="hl">Neural Networks & Backpropagation:</span> McCulloch-Pitts unit computes <code>v = &Sigma; w_i x_i</code> and applies activation <code>f(v)</code> (Linear, Heaviside Step, Sigmoid <code>1/(1+e^-v)</code>, or Bipolar <code>tanh</code>). Backpropagation computes output error <code>e_k = y_dk - f(a_k)</code> and retropropagates it to hidden layers.</li>
+        </ul>
+      </div>
+
+      <!-- CARD 6 -->
+      <div class="card searchable">
+        <div class="card-head">
+          <div><span class="card-title">6. Statistical Learning (EM, HMM), Reinforcement Learning & Responsible AI</span><span class="tag">Ch 4 • Core</span></div>
+          <label style="font-size:0.85rem; cursor:pointer;"><input type="checkbox" class="master-check" onchange="saveProgress()"> Mastered</label>
+        </div>
+        <div class="lang-hi">
+          <ul>
+            <li><span class="hl">EM Algorithm (Hidden/Latent Variables ke liye):</span> <strong>E-Step:</strong> Maan lo parameters pata hain aur hidden indicator variables ki expected probability <code>P(C=i | x_j)</code> nikalo. <strong>M-Step:</strong> Expected values se naye mean, covariance, aur weights update karo taaki log-likelihood maximize ho.</li>
+            <li><span class="hl">Hidden Markov Model (HMM):</span> Sequential data ke liye. Ismein <em>Transition Matrix</em> (hidden state transitions) aur <em>Emission Matrix</em> (observation likelihoods) hote hain. <strong>Baum-Welch Algorithm</strong> training ke liye aur <strong>Viterbi Algorithm</strong> most likely hidden state sequence decode karne ke liye use hota hai.</li>
+            <li><span class="hl">Passive RL (Policy fix hai):</span> (1) <em>Direct Utility Estimation</em> (rewards-to-go ka average; Bellman dependency ignore karta hai), (2) <em>ADP</em> (Model-based; transition table <code>P(s'|s,a)</code> seekhta hai), (3) <em>TD Learning</em> (Model-free; <code>U(s) &larr; U(s) + &alpha;[R(s) + &gamma;U(s') - U(s)]</code>).</li>
+            <li><span class="hl">Active RL & Q-Learning:</span> Agent khud action chunta hai. <strong>GLIE</strong> exploration ensure karta hai. <strong>Q-Learning</strong> model-free, off-policy algorithm hai: <code>Q(s,a) &larr; Q(s,a) + &alpha;[r + &gamma; max_a' Q(s',a') - Q(s,a)]</code>.</li>
+            <li><span class="hl">Responsible AI & GenAI Risks:</span> 8 Pillars: Fairness, Transparency, Accountability, Privacy, Safety, Security, Human Oversight, Reliability. 4 Biases: Historical, Sampling, Measurement, Algorithmic. GenAI Risks: Deepfakes, Hallucinations (confident false info), Copyright, Data leakage.</li>
+          </ul>
+        </div>
+        <div class="lang-en">
+          <ul>
+            <li><span class="hl">Expectation-Maximization (EM):</span> Learns parameters with latent variables. <strong>E-Step</strong> computes expected cluster probabilities <code>P(C=i | x_j)</code>; <strong>M-Step</strong> re-estimates parameters to maximize expected log-likelihood.</li>
+            <li><span class="hl">Hidden Markov Model (HMM):</span> Uses Transition and Emission matrices. Trained via <strong>Baum-Welch (Forward-Backward)</strong>; decoded via <strong>Viterbi Algorithm</strong>.</li>
+            <li><span class="hl">Markov Decision Process (MDP):</span> Defined by 5 elements: States <code>S</code>, Actions <code>A</code>, Transition model <code>P(s'|s,a)</code>, Reward <code>R(s)</code>, Discount factor <code>&gamma;</code>. Follows the Markov Property.</li>
+            <li><span class="hl">Q-Learning:</span> Model-free, off-policy active RL algorithm: <code>Q(s,a) &larr; Q(s,a) + &alpha;[r + &gamma; max_a' Q(s',a') - Q(s,a)]</code>.</li>
+            <li><span class="hl">Responsible AI:</span> Encompasses Fairness (Individual & Group), Transparency (documented design) vs. Explainability (justifying black-box predictions), Accountability, Human Oversight, and mitigating Generative AI risks (Hallucinations, Deepfakes, Bias).</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: EXAM DIAGRAMS -->
+    <section id="tab-diagrams" class="content-section">
+      <h2 style="margin-bottom: 16px; color: var(--accent);">📐 Must-Draw Exam Architecture Blueprints</h2>
+      <p style="color:var(--muted); margin-bottom:16px;">Theory questions mein yeh ASCII blueprints banakar aana—examiner seedha full marks dega.</p>
+
+      <div class="card searchable">
+        <div class="card-title">1. General Learning Agent Architecture (Ch 3 - Fig 3.3.2)</div>
+        <div class="diagram-box">
+                 +------------------------+
+                 |  Performance Standard  |
+                 +-----------+------------+
+                             |
+                             v
++-------------+        +----------+        +--------------------+
+|             |------->|  Critic  |------->|                    |
+|             | Sensors+----------+Feedback|  Learning Element  |
+|             |                            |                    |
+| Environment |                            +---+------------+---+
+|             |                 Learning Goals |            | Changes
+|             |                                v            v
+|             |                     +----------+---+  +-----+---------------+
+|             |       Sensors       |   Problem    |  |                     |
+|             |-------------------->|  Generator   |->| Performance Element |
+|             |<--------------------|              |  |                     |
++-------------+      Effectors      +--------------+  +---------------------+
+        </div>
+      </div>
+
+      <div class="card searchable">
+        <div class="card-title">2. Explanation-Based Learning (EBL) System Architecture (Ch 3 - Fig 3.1.2)</div>
+        <div class="diagram-box">
+Goal Concept ------>+----------------+
+Training Examples ->| Problem Solver |---> Specific Trace --->+-------------+
+Inference Rules --->+----------------+                        | Generalizer |<--- Knowledge Base
+                                                              +------+------+
+                                                                     | General Trace
+                                                                     v
+                                           Operationality --->+--------------+
+                                              Standard        | Operationality|---> Pruned Rule
+                                                              |    Pruner    |
+                                                              +--------------+
+        </div>
+      </div>
+
+      <div class="card searchable">
+        <div class="card-title">3. Bayesian Belief Network: Burglary-Earthquake-Alarm (Ch 2 - Fig 2.12.1)</div>
+        <div class="diagram-box">
+      +------------------+         +--------------------+
+      |    Burglary      |         |     Earthquake     |
+      | P(B=T) = 0.001   |         |   P(E=T) = 0.002   |
+      +--------+---------+         +---------+----------+
+               |                             |
+               +-------------+---------------+
+                             |
+                             v
+                    +-----------------+
+                    |      Alarm      |  <-- CPT: P(A | B, E)
+                    +--------+--------+
+                             |
+               +-------------+-------------+
+               |                           |
+               v                           v
+      +-----------------+         +-----------------+
+      |    JohnCalls    |         |    MaryCalls    |
+      |   P(J | Alarm)  |         |   P(M | Alarm)  |
+      +-----------------+         +-----------------+
+        </div>
+      </div>
+
+      <div class="card searchable">
+        <div class="card-title">4. Partial Order Planning (POP): Wearing Shoes (Ch 2 - Fig 2.5.13)</div>
+        <div class="diagram-box">
+                           +---------+
+                           |  Start  |
+                           +----+----+
+                                |
+                 +--------------+--------------+
+                 v                             v
+          +-------------+               +--------------+
+          |  Left Sock  |               |  Right Sock  |
+          +------+------+               +------+-------+
+                 | LeftSockOn                  | RightSockOn
+                 v                             v
+          +-------------+               +--------------+
+          |  Left Shoe  |               |  Right Shoe  |
+          +------+------+               +------+-------+
+                 | LeftShoeOn                  | RightShoeOn
+                 +--------------+--------------+
+                                v
+                           +---------+
+                           | Finish  |
+                           +---------+
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: INTERACTIVE NUMERICAL SOLVERS -->
+    <section id="tab-solvers" class="content-section">
+      <h2 style="margin-bottom: 16px; color: var(--accent);">🧮 Interactive Exam Numerical Solvers</h2>
+
+      <!-- SOLVER 1: APRIORI -->
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">1. Apriori Algorithm Step-by-Step Solver (Ch 4 - Ex 4.2.3)</span>
+        </div>
+        <div class="solver-grid">
+          <div>
+            <p style="font-size:0.85rem; color:var(--muted); margin-bottom:10px;">
+              <strong>Transactions (N = 6):</strong><br>
+              T1: Hot Dogs, Buns, Ketchup<br>
+              T2: Hot Dogs, Buns<br>
+              T3: Hot Dogs, Coke, Chips<br>
+              T4: Chips, Coke<br>
+              T5: Chips, Ketchup<br>
+              T6: Hot Dogs, Coke, Chips
+            </p>
+            <div class="input-group">
+              <label>Minimum Support Threshold (%)</label>
+              <input type="number" id="apSup" value="33.33" step="1" oninput="solveApriori()">
+            </div>
+            <div class="input-group">
+              <label>Minimum Confidence Threshold (%)</label>
+              <input type="number" id="apConf" value="60" step="5" oninput="solveApriori()">
+            </div>
+          </div>
+          <div class="result-box" id="aprioriOut"></div>
+        </div>
+      </div>
+
+      <!-- SOLVER 2: ENTROPY -->
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">2. Decision Tree Node Entropy Calculator (Ch 3 - Eq 3.8.1)</span>
+        </div>
+        <div class="solver-grid">
+          <div>
+            <div class="input-group">
+              <label>Positive Examples (True / Yes)</label>
+              <input type="number" id="entPos" value="6" min="0" oninput="solveEntropy()">
+            </div>
+            <div class="input-group">
+              <label>Negative Examples (False / No)</label>
+              <input type="number" id="entNeg" value="6" min="0" oninput="solveEntropy()">
+            </div>
+          </div>
+          <div class="result-box" id="entropyOut"></div>
+        </div>
+      </div>
+
+      <!-- SOLVER 3: Q-LEARNING -->
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">3. Q-Learning Update Rule Calculator (Ch 4 - Sec 4.3.2B)</span>
+        </div>
+        <div class="solver-grid">
+          <div>
+            <div class="input-group"><label>Current Q(s, a)</label><input type="number" id="qOld" value="2.0" step="0.1" oninput="solveQL()"></div>
+            <div class="input-group"><label>Learning Rate (&alpha;)</label><input type="number" id="qAlpha" value="0.5" step="0.1" oninput="solveQL()"></div>
+            <div class="input-group"><label>Immediate Reward (r)</label><input type="number" id="qRew" value="10" step="1" oninput="solveQL()"></div>
+            <div class="input-group"><label>Discount Factor (&gamma;)</label><input type="number" id="qGamma" value="0.9" step="0.1" oninput="solveQL()"></div>
+            <div class="input-group"><label>Max Next State Q: max_a' Q(s', a')</label><input type="number" id="qMaxNext" value="4.0" step="0.5" oninput="solveQL()"></div>
+          </div>
+          <div class="result-box" id="qlOut"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: ACTIVE RECALL & KEYWORD TESTER -->
+    <section id="tab-practice" class="content-section">
+      <h2 style="margin-bottom: 10px; color: var(--accent);">✍️ Textbook Review Questions — Active Recall & Keyword Grader</h2>
+      <p style="color:var(--muted); margin-bottom:18px;">Apna answer box mein type karo—app automatically check karega ki tumne exam ke main keywords likhe hain ya nahi!</p>
+      <div id="qaList"></div>
+    </section>
+
+  </div>
+
+<script>
+  // 1. TAB NAVIGATION
+  function showTab(tabId, el) {
+    document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    el.classList.add('active');
+  }
+
+  // 2. LANGUAGE MODE TOGGLE
+  function toggleLang() {
+    const b = document.body;
+    const btn = document.getElementById('langBtn');
+    if (b.classList.contains('mode-hi')) {
+      b.classList.replace('mode-hi', 'mode-en');
+      btn.innerText = '🌐 Mode: Exam English (Formal)';
+      btn.classList.add('english');
+    } else {
+      b.classList.replace('mode-en', 'mode-hi');
+      btn.innerText = '🌐 Mode: Hinglish (Easy)';
+      btn.classList.remove('english');
+    }
+  }
+
+  // 3. POMODORO TIMER
+  let timeLeft = 25 * 60;
+  let timerId = null;
+  function updateTimerUI() {
+    const m = String(Math.floor(timeLeft / 60)).padStart(2, '0');
+    const s = String(timeLeft % 60).padStart(2, '0');
+    document.getElementById('timerDisplay').innerText = `${m}:${s}`;
+  }
+  function startTimer() {
+    if (timerId) return;
+    timerId = setInterval(() => {
+      if (timeLeft > 0) { timeLeft--; updateTimerUI(); }
+      else { clearInterval(timerId); timerId = null; alert('Pomodoro Sprint Complete! Take a 5 min break.'); }
+    }, 1000);
+  }
+  function pauseTimer() { clearInterval(timerId); timerId = null; }
+  function resetTimer() { pauseTimer(); timeLeft = 25 * 60; updateTimerUI(); }
+
+  // 4. APRIORI SOLVER
+  function solveApriori() {
+    const sPct = parseFloat(document.getElementById('apSup').value) || 0;
+    const cPct = parseFloat(document.getElementById('apConf').value) || 0;
+    const minCnt = Math.ceil((sPct / 100) * 6 - 0.01);
+
+    const rules = [
+      { lhs: 'Hot Dogs ^ Coke', rhs: 'Chips', num: 2, den: 2 },
+      { lhs: 'Hot Dogs ^ Chips', rhs: 'Coke', num: 2, den: 2 },
+      { lhs: 'Coke ^ Chips', rhs: 'Hot Dogs', num: 2, den: 3 },
+      { lhs: 'Coke', rhs: 'Hot Dogs ^ Chips', num: 2, den: 3 },
+      { lhs: 'Hot Dogs', rhs: 'Coke ^ Chips', num: 2, den: 4 },
+      { lhs: 'Chips', rhs: 'Hot Dogs ^ Coke', num: 2, den: 4 }
+    ];
+
+    let html = `<div><strong>Step 1: Min Support Count</strong> = (${sPct}/100) &times; 6 = <strong>${minCnt}</strong></div>`;
+    html += `<div style="margin-top:6px;"><strong>Step 2: Frequent 3-Itemset:</strong> {Hot Dogs, Coke, Chips} (Support Count = 2)</div>`;
+    html += `<div style="margin-top:8px;"><strong>Step 3: Association Rules (Min Conf = ${cPct}%):</strong><ul style="margin-top:4px;">`;
+    rules.forEach(r => {
+      const conf = ((r.num / r.den) * 100).toFixed(2);
+      const pass = conf >= cPct;
+      html += `<li><code>[${r.lhs}] &rArr; [${r.rhs}]</code>: ${r.num}/${r.den} = <strong>${conf}%</strong> — <span style="color:${pass ? '#10b981' : '#ef4444'}">${pass ? 'SELECTED' : 'REJECTED'}</span></li>`;
+    });
+    html += `</ul></div>`;
+    document.getElementById('aprioriOut').innerHTML = html;
+  }
+
+  // 5. ENTROPY SOLVER
+  function solveEntropy() {
+    const p = parseFloat(document.getElementById('entPos').value) || 0;
+    const n = parseFloat(document.getElementById('entNeg').value) || 0;
+    const tot = p + n;
+    if (tot === 0) { document.getElementById('entropyOut').innerHTML = 'Enter non-zero counts.'; return; }
+    const pp = p / tot, pn = n / tot;
+    const e10 = (pp > 0 ? -pp * Math.log10(pp) : 0) + (pn > 0 ? -pn * Math.log10(pn) : 0);
+    const e2  = (pp > 0 ? -pp * Math.log2(pp) : 0)  + (pn > 0 ? -pn * Math.log2(pn) : 0);
+
+    document.getElementById('entropyOut').innerHTML = `
+      <div><strong>Total Samples:</strong> ${tot} (P(+) = ${p}/${tot}, P(-) = ${n}/${tot})</div>
+      <div style="margin-top:8px;"><strong>Textbook Formula (log10):</strong><br><code>Entropy = ${e10.toFixed(4)}</code></div>
+      <div style="margin-top:8px;"><strong>Standard Formula (log2):</strong><br><code>Entropy = ${e2.toFixed(4)} bits</code></div>
+      <div style="margin-top:8px; color:var(--warn);">${(p===0 || n===0) ? '✨ PURE NODE (Entropy = 0)' : (p===n ? '⚠️ MAX IMPURITY (50/50 Split)' : 'Mixed Node')}</div>
+    `;
+  }
+
+  // 6. Q-LEARNING SOLVER
+  function solveQL() {
+    const q = parseFloat(document.getElementById('qOld').value) || 0;
+    const a = parseFloat(document.getElementById('qAlpha').value) || 0;
+    const r = parseFloat(document.getElementById('qRew').value) || 0;
+    const g = parseFloat(document.getElementById('qGamma').value) || 0;
+    const m = parseFloat(document.getElementById('qMaxNext').value) || 0;
+
+    const tdTarget = r + g * m;
+    const tdError = tdTarget - q;
+    const qNew = q + a * tdError;
+
+    document.getElementById('qlOut').innerHTML = `
+      <div><strong>Formula:</strong><br><code>Q(s,a) &larr; Q(s,a) + &alpha;[r + &gamma; max Q(s',a') - Q(s,a)]</code></div>
+      <div style="margin-top:8px;"><strong>Step 1 (TD Target):</strong> ${r} + (${g} &times; ${m}) = <strong>${tdTarget.toFixed(2)}</strong></div>
+      <div style="margin-top:4px;"><strong>Step 2 (TD Error):</strong> ${tdTarget.toFixed(2)} - ${q} = <strong>${tdError.toFixed(2)}</strong></div>
+      <div style="margin-top:8px; font-size:1.05rem; color:var(--success);"><strong>Updated Q(s,a) = ${qNew.toFixed(3)}</strong></div>
+    `;
+  }
+
+  // 7. ACTIVE RECALL Q&A BANK
+  const questions = [
+    { q: "Q1. What is a Knowledge-Based Agent and how do TELL and ASK work?", kw: ["knowledge base", "inference engine", "tell", "ask", "partially observable"], a: "A Knowledge-Based Agent uses a Knowledge Base (domain-specific facts) and an Inference Engine (domain-independent algorithms) to act in partially observable environments. TELL adds new percept sentences to the KB, while ASK queries the KB to infer the best action." },
+    { q: "Q2. Differentiate between Forward Chaining and Backward Chaining.", kw: ["data-driven", "goal-driven", "bottom-up", "top-down", "bfs", "dfs"], a: "Forward Chaining is data-driven, bottom-up reasoning starting from known facts to conclusions using BFS. Backward Chaining is goal-driven, top-down reasoning starting from the goal to supporting facts using DFS (used in diagnostic systems)." },
+    { q: "Q3. What is the difference between STRIPS and ADL planning languages?", kw: ["positive", "negative", "closed-world", "open-world", "quantified"], a: "STRIPS allows only positive literals, ground conjunction goals, and uses the Closed-World Assumption (unmentioned literals are False). ADL allows positive and negative literals, quantified variables, disjunctions, and uses the Open-World Assumption." },
+    { q: "Q4. Explain the 4 theoretical components of a General Learning Agent.", kw: ["performance element", "critic", "learning element", "problem generator"], a: "1. Performance Element (selects actions via sensors/effectors), 2. Critic (evaluates actions against a performance standard and gives feedback), 3. Learning Element (updates the performance element), 4. Problem Generator (suggests exploratory actions/experiments)." },
+    { q: "Q5. Explain Bias-Variance Tradeoff, Overfitting, and Underfitting.", kw: ["bias", "variance", "underfitting", "overfitting", "regularization"], a: "Bias is error from overly simple assumptions (High Bias causes Underfitting: high train & test error). Variance is sensitivity to training noise (High Variance causes Overfitting: low train error, high test error, prevented via Regularization, Dropout, and Pruning). Total Error = Bias² + Variance + Irreducible Noise." },
+    { q: "Q6. What is the Expectation-Maximization (EM) Algorithm and its two steps?", kw: ["hidden", "latent", "e-step", "m-step", "log-likelihood"], a: "EM learns probability model parameters when data has hidden (latent) variables. 1. E-Step (Expectation): Infers expected cluster probabilities P(C=i|x) given current parameters. 2. M-Step (Maximization): Updates parameters (mean, covariance, weights) to maximize expected log-likelihood." },
+    { q: "Q7. Define a Hidden Markov Model (HMM) and state its training and decoding algorithms.", kw: ["hidden states", "observations", "transition", "emission", "baum-welch", "viterbi"], a: "An HMM models sequential data using hidden states (Transition matrix) and visible observations (Emission matrix). It is trained using the Baum-Welch (Forward-Backward) algorithm, and the most likely sequence of hidden states is decoded using the Viterbi algorithm." },
+    { q: "Q8. Define Markov Decision Process (MDP) and compare ADP, TD, and Q-Learning.", kw: ["states", "actions", "transition", "reward", "discount", "markov property", "bellman", "model-free"], a: "An MDP has 5 components: States (S), Actions (A), Transition Probability P(s'|s,a), Reward R(s), and Discount Factor (gamma), governed by the Markov Property. ADP is model-based passive RL; TD is model-free passive RL; Q-Learning is model-free, off-policy active RL that learns action-utility Q(s,a)." },
+    { q: "Q9. What is Responsible AI? Differentiate between Transparency and Explainability.", kw: ["fairness", "transparency", "explainability", "accountability", "human oversight", "black box"], a: "Responsible AI ensures ethical, fair, safe, and accountable AI. Transparency refers to open documentation of data, design, and algorithms, while Explainability is the ability to provide clear reasons why a black-box model generated a specific prediction." },
+    { q: "Q10. What are the major risks in Generative AI (Hallucinations, Deepfakes, Bias)?", kw: ["hallucination", "deepfake", "bias", "privacy", "copyright"], a: "Key Generative AI risks include: 1. Hallucinations (fabricated false facts/references), 2. Deepfakes & Misinformation, 3. Bias & Unfairness, 4. Privacy & Data Leakage, 5. Copyright/IP infringement, 6. Phishing/Security threats, and 7. Overdependence." }
+  ];
+
+  function renderQA() {
+    const container = document.getElementById('qaList');
+    container.innerHTML = questions.map((item, idx) => `
+      <div class="qa-item searchable">
+        <div class="qa-q"><span>${item.q}</span></div>
+        <textarea class="qa-textarea" id="ansInput-${idx}" placeholder="Type key points or keywords here to test your memory..." oninput="checkKeywords(${idx})"></textarea>
+        <div id="kwBox-${idx}" style="margin-bottom:8px;">
+          <span style="font-size:0.75rem; color:var(--muted);">Target Keywords: </span>
+          ${item.kw.map(k => `<span class="kw-badge" data-kw="${k}">${k}</span>`).join('')}
+        </div>
+        <button class="btn-sm" onclick="document.getElementById('ansBox-${idx}').style.display='block'">👁️ Show Model Exam Answer</button>
+        <div class="qa-ans" id="ansBox-${idx}"><strong>Model Answer:</strong> ${item.a}</div>
+      </div>
+    `).join('');
+  }
+
+  function checkKeywords(idx) {
+    const val = document.getElementById(`ansInput-${idx}`).value.toLowerCase();
+    const badges = document.querySelectorAll(`#kwBox-${idx} .kw-badge`);
+    badges.forEach(b => {
+      const kw = b.getAttribute('data-kw');
+      if (val.includes(kw)) b.classList.add('hit');
+      else b.classList.remove('hit');
+    });
+  }
+
+  // 8. GLOBAL SEARCH
+  function runSearch() {
+    const q = document.getElementById('globalSearch').value.toLowerCase();
+    document.querySelectorAll('.searchable').forEach(el => {
+      el.style.display = el.innerText.toLowerCase().includes(q) ? 'block' : 'none';
+    });
+  }
+
+  // 9. SAVE & LOAD PROGRESS
+  function saveProgress() {
+    const checks = document.querySelectorAll('.master-check');
+    let done = 0;
+    const states = [];
+    checks.forEach((c, i) => {
+      states.push(c.checked);
+      if (c.checked) { done++; c.closest('.card').classList.add('mastered'); }
+      else { c.closest('.card').classList.remove('mastered'); }
+    });
+    localStorage.setItem('ai_pro_progress', JSON.stringify(states));
+    const pct = Math.round((done / checks.length) * 100);
+    document.getElementById('progPct').innerText = pct + '%';
+    document.getElementById('progFill').style.width = pct + '%';
+  }
+
+  function loadProgress() {
+    const saved = JSON.parse(localStorage.getItem('ai_pro_progress') || '[]');
+    const checks = document.querySelectorAll('.master-check');
+    checks.forEach((c, i) => { if (saved[i]) c.checked = true; });
+    saveProgress();
+  }
+
+  // INIT
+  solveApriori();
+  solveEntropy();
+  solveQL();
+  renderQA();
+  loadProgress();
+</script>
+
+</body>
+</html>
